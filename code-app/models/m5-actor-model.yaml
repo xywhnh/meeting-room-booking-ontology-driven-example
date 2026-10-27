@@ -1,0 +1,89 @@
+# M5 主体模型 - 会议室预定管理域
+# permissionId 是模型层标识；后端种子里的权限 code（booking:save 等）与它的映射见 seed.py 注释。
+model_type: ACTOR
+version: "1.0"
+domain: "会议室预定管理"
+
+actors:
+  - actorId: ACTOR-ADMIN
+    name: 系统管理员
+    actorType: HUMAN
+    roles:
+      - ROLE-ADMIN
+  - actorId: ACTOR-APPLICANT
+    name: 预定申请人
+    actorType: HUMAN
+    roles:
+      - ROLE-APPLICANT
+  - actorId: ACTOR-DEPT-MANAGER
+    name: 部门主管
+    actorType: HUMAN
+    roles:
+      - ROLE-DEPT-MANAGER
+  - actorId: ACTOR-ADMIN-MANAGER
+    name: 行政经理
+    actorType: HUMAN
+    roles:
+      - ROLE-ADMIN-MANAGER
+
+roles:
+  - roleId: ROLE-ADMIN
+    name: 系统管理员
+    permissions:
+      - "*"
+  - roleId: ROLE-APPLICANT
+    name: 预定申请人
+    permissions:
+      - PERM-BOOKING-SAVE
+      - PERM-BOOKING-SUBMIT
+      - PERM-BOOKING-QUERY
+      - PERM-BOOKING-REPORT
+      - PERM-ROOM-QUERY
+  - roleId: ROLE-DEPT-MANAGER
+    name: 部门主管
+    permissions:
+      - PERM-BOOKING-APPROVE-DEPT
+      - PERM-BOOKING-QUERY
+      - PERM-BOOKING-REPORT
+      - PERM-ROOM-QUERY
+  - roleId: ROLE-ADMIN-MANAGER
+    name: 行政经理
+    permissions:
+      - PERM-BOOKING-APPROVE-ADMIN
+      - PERM-BOOKING-QUERY
+      - PERM-BOOKING-REPORT
+      - PERM-ROOM-QUERY
+
+permissions:
+  - permissionId: PERM-BOOKING-SAVE
+    targetType: BEHAVIOR
+    targetRef: Booking_SaveAsDraft
+    dataScope: ALL
+  - permissionId: PERM-BOOKING-SUBMIT
+    targetType: BEHAVIOR
+    targetRef: Booking_Submit
+    dataScope: ALL
+  - permissionId: PERM-BOOKING-QUERY
+    targetType: BEHAVIOR
+    targetRef: Booking_QueryList
+    dataScope: ALL
+  - permissionId: PERM-BOOKING-REPORT
+    targetType: BEHAVIOR
+    targetRef: Booking_QueryRoomSummary
+    dataScope: ALL
+  - permissionId: PERM-BOOKING-APPROVE-DEPT
+    targetType: BEHAVIOR
+    targetRef: Booking_ApproveDept
+    dataScope: ALL
+  - permissionId: PERM-BOOKING-APPROVE-ADMIN
+    targetType: BEHAVIOR
+    targetRef: Booking_ApproveAdmin
+    dataScope: ALL
+  - permissionId: PERM-ROOM-QUERY
+    targetType: BEHAVIOR
+    targetRef: Room_QueryList
+    dataScope: ALL
+  - permissionId: PERM-ROOM-CREATE
+    targetType: BEHAVIOR
+    targetRef: Room_Create
+    dataScope: ALL

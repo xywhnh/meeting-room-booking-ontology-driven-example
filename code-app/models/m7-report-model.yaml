@@ -1,0 +1,127 @@
+# M7 查询统计与报表模型 - 会议室预定管理域
+model_type: REPORT
+version: "1.0"
+domain: "会议室预定管理"
+
+query_reports:
+  - id: REP-BOOKING-LIST
+    name: 预定综合查询
+    alias: bookingList
+    objectType: LIST_QUERY
+    description: 按预定编号、会议室、日期、状态查询预定单
+    behaviorRef: Booking_QueryList
+    sourceObjects:
+      - objectRef: AGG-BOOKING-001
+        alias: booking
+        primary: true
+      - objectRef: AGG-ROOM-001
+        alias: room
+        primary: false
+    joins:
+      - joinId: J01
+        joinType: LEFT
+        leftSource: booking
+        rightSource: room
+        conditionExpression: "booking.roomId == room.id"
+    parameters:
+      - name: bookingNo
+        label: 预定编号
+        dataType: String
+        required: false
+        allowedOperators: [LIKE]
+        sourceField: booking.bookingNo
+      - name: roomId
+        label: 会议室
+        dataType: Integer
+        required: false
+        allowedOperators: [EQ]
+        sourceField: booking.roomId
+      - name: bookingDate
+        label: 预定日期
+        dataType: Date
+        required: false
+        allowedOperators: [EQ]
+        sourceField: booking.bookingDate
+      - name: status
+        label: 审批状态
+        dataType: Enum
+        required: false
+        allowedOperators: [EQ]
+        sourceField: booking.status
+    conditions:
+      - conditionId: C01
+        leftExpression: booking.bookingNo
+        operator: LIKE
+        parameterRef: bookingNo
+        logicalConnector: AND
+        group: BASE
+        skipWhenParameterEmpty: true
+      - conditionId: C02
+        leftExpression: booking.roomId
+        operator: EQ
+        parameterRef: roomId
+        logicalConnector: AND
+        group: BASE
+        skipWhenParameterEmpty: true
+      - conditionId: C03
+        leftExpression: booking.bookingDate
+        operator: EQ
+        parameterRef: bookingDate
+        logicalConnector: AND
+        group: BASE
+        skipWhenParameterEmpty: true
+      - conditionId: C04
+        leftExpression: booking.status
+        operator: EQ
+        parameterRef: status
+        logicalConnector: AND
+        group: BASE
+        skipWhenParameterEmpty: true
+
+  - id: REP-BOOKING-ROOM-SUMMARY
+    name: 会议室预定统计
+    alias: bookingRoomSummary
+    objectType: REPORT
+    description: 按会议室汇总预定单数与已通过单数（可选日期范围过滤）
+    behaviorRef: Booking_QueryRoomSummary
+    sourceObjects:
+      - objectRef: AGG-BOOKING-001
+        alias: booking
+        primary: true
+      - objectRef: AGG-ROOM-001
+        alias: room
+        primary: false
+    joins:
+      - joinId: J01
+        joinType: LEFT
+        leftSource: booking
+        rightSource: room
+        conditionExpression: "booking.roomId == room.id"
+    parameters:
+      - name: dateFrom
+        label: 预定日期起
+        dataType: Date
+        required: false
+        allowedOperators: [GE]
+        sourceField: booking.bookingDate
+      - name: dateTo
+        label: 预定日期止
+        dataType: Date
+        required: false
+        allowedOperators: [LE]
+        sourceField: booking.bookingDate
+    conditions:
+      - conditionId: C01
+        leftExpression: booking.bookingDate
+        operator: GE
+        parameterRef: dateFrom
+        logicalConnector: AND
+        group: BASE
+        skipWhenParameterEmpty: true
+      - conditionId: C02
+        leftExpression: booking.bookingDate
+        operator: LE
+        parameterRef: dateTo
+        logicalConnector: AND
+        group: BASE
+        skipWhenParameterEmpty: true

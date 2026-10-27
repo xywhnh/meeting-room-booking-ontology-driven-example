@@ -1,0 +1,13 @@
+# Python
+__pycache__/
+*.pyc
+# Runtime data (never commit)
+code-app/backend/data/
+code-app/backend/.env
+# Node
+node_modules/
+code-app/frontend/dist/
+# IDE
+.idea/
+.vscode/
+*.log

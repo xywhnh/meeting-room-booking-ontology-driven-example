@@ -1,0 +1,112 @@
+# M3 规则模型 - 会议室预定管理域
+# 表达式用 simpleeval 求值（与上游 code-paas 规则引擎一致）；
+# 需要查库的规则（容量、重叠）在表达式之外由服务层用同一规则 ID 落实，
+# 表达式写的是该规则的语义，见 services/booking_service.py 注释。
+model_type: RULE
+version: "1.0"
+domain: "会议室预定管理"
+
+rules:
+  - id: RULE-BOOKING-TIME-ORDER
+    name: 预定时段顺序
+    ruleType: VALIDATION
+    description: 结束时间必须晚于开始时间
+    inputParams:
+      - name: startTime
+        type: String
+        sourceField: Booking.startTime
+        required: true
+      - name: endTime
+        type: String
+        sourceField: Booking.endTime
+        required: true
+    outputType: Boolean
+    expression: |
+      endTime > startTime
+    reusedBy:
+      - Booking_SaveAsDraft
+      - Booking_Submit
+    version: "1.0"
+
+  - id: RULE-BOOKING-CAPACITY
+    name: 会议室容量
+    ruleType: VALIDATION
+    description: 参会人数不得超过所选会议室容纳人数
+    inputParams:
+      - name: participants
+        type: Integer
+        sourceField: Booking.participants
+        required: true
+      - name: capacity
+        type: Integer
+        sourceField: MeetingRoom.capacity
+        required: true
+    outputType: Boolean
+    expression: |
+      participants <= capacity
+    reusedBy:
+      - Booking_SaveAsDraft
+      - Booking_Submit
+    version: "1.0"
+
+  - id: RULE-BOOKING-NO-OVERLAP
+    name: 同室同日不重叠
+    ruleType: VALIDATION
+    description: 同一会议室、同一日期，已提交（待审批或已通过）的预定时段不得重叠；草稿与已驳回不占时段
+    inputParams:
+      - name: roomId
+        type: Integer
+        sourceField: Booking.roomId
+        required: true
+      - name: bookingDate
+        type: Date
+        sourceField: Booking.bookingDate
+        required: true
+      - name: startTime
+        type: String
+        sourceField: Booking.startTime
+        required: true
+      - name: endTime
+        type: String
+        sourceField: Booking.endTime
+        required: true
+    outputType: Boolean
+    expression: |
+      overlappingApprovedOrPendingCount == 0
+    reusedBy:
+      - Booking_SaveAsDraft
+      - Booking_Submit
+    version: "1.0"
+
+  - id: RULE-BOOKING-DATE-FUTURE
+    name: 预定日期不早于今天
+    ruleType: VALIDATION
+    description: 预定日期不得早于提交当天的日期
+    inputParams:
+      - name: bookingDate
+        type: Date
+        sourceField: Booking.bookingDate
+        required: true
+    outputType: Boolean
+    expression: |
+      bookingDate >= today
+    reusedBy:
+      - Booking_SaveAsDraft
+      - Booking_Submit
+    version: "1.0"
+
+  - id: RULE-BOOKING-NEEDS-ADMIN
+    name: 大型会议行政复核判定
+    ruleType: VALIDATION
+    description: 参会人数达到 20 人及以上时，部门主管通过后需行政经理复核；否则直接通过
+    inputParams:
+      - name: participants
+        type: Integer
+        sourceField: Booking.participants
+        required: true
+    outputType: Boolean
+    expression: |
+      participants >= 20
+    reusedBy:
+      - Booking_ApproveDept
+    version: "1.0"

@@ -1,0 +1,1 @@
+{"domain":"会议室预定管理","framework":"ontology_modeling_framework_v9.md","model_files":["m1-object-model.yaml","m2-behavior-model.yaml","m3-rule-model.yaml","m5-actor-model.yaml","m6-flow-model.yaml","m7-report-model.yaml","mu-ui-model.yaml"],"model_type":"MANIFEST","project":"meeting-room-booking","source_requirements":"会议室预定需求规格说明书-V9.md","version":"1.0"}

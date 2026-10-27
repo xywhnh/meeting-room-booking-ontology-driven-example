@@ -1,0 +1,157 @@
+# M2 行为模型 - 会议室预定管理域
+model_type: BEHAVIOR
+version: "1.0"
+domain: "会议室预定管理"
+
+behaviors:
+  - id: Booking_SaveAsDraft
+    name: 保存预定草稿
+    ownerEntity: AGG-BOOKING-001
+    behaviorType: COMMAND
+    triggerType: USER_ACTION
+    preconditions:
+      - "booking.status == '草稿' 或 booking.status == '已驳回'"
+    postconditions:
+      - field: booking.status
+        setValue: "草稿"
+    appliedRules:
+      - RULE-BOOKING-TIME-ORDER
+      - RULE-BOOKING-CAPACITY
+      - RULE-BOOKING-NO-OVERLAP
+      - RULE-BOOKING-DATE-FUTURE
+    requiredPermissions:
+      - PERM-BOOKING-SAVE
+    syncTriggers: []
+
+  - id: Booking_Submit
+    name: 提交预定审批
+    ownerEntity: AGG-BOOKING-001
+    behaviorType: COMMAND
+    triggerType: USER_ACTION
+    preconditions:
+      - "booking.status == '草稿' 或 booking.status == '已驳回'"
+      - "全部 M3 校验规则通过"
+    postconditions:
+      - field: booking.status
+        setValue: "待部门主管审批"
+    appliedRules:
+      - RULE-BOOKING-TIME-ORDER
+      - RULE-BOOKING-CAPACITY
+      - RULE-BOOKING-NO-OVERLAP
+      - RULE-BOOKING-DATE-FUTURE
+    requiredPermissions:
+      - PERM-BOOKING-SUBMIT
+    syncTriggers:
+      - flowRef: FLOW-BOOKING-APPROVAL
+
+  - id: Booking_Withdraw
+    name: 撤回预定申请
+    ownerEntity: AGG-BOOKING-001
+    behaviorType: COMMAND
+    triggerType: USER_ACTION
+    preconditions:
+      - "booking.status == '待部门主管审批'"
+      - "第一审批节点尚未处理"
+    postconditions:
+      - field: booking.status
+        setValue: "草稿"
+    appliedRules: []
+    requiredPermissions:
+      - PERM-BOOKING-SUBMIT
+    syncTriggers: []
+
+  - id: Booking_QueryList
+    name: 查询预定列表
+    ownerEntity: AGG-BOOKING-001
+    behaviorType: QUERY
+    triggerType: USER_ACTION
+    preconditions: []
+    postconditions: []
+    appliedRules: []
+    requiredPermissions:
+      - PERM-BOOKING-QUERY
+    syncTriggers: []
+    queryReportRef: REP-BOOKING-LIST
+
+  - id: Booking_QueryDetail
+    name: 查看预定详情
+    ownerEntity: AGG-BOOKING-001
+    behaviorType: QUERY
+    triggerType: USER_ACTION
+    preconditions: []
+    postconditions: []
+    appliedRules: []
+    requiredPermissions:
+      - PERM-BOOKING-QUERY
+    syncTriggers: []
+
+  - id: Booking_QueryRoomSummary
+    name: 查询会议室预定统计
+    ownerEntity: AGG-BOOKING-001
+    behaviorType: QUERY
+    triggerType: USER_ACTION
+    preconditions: []
+    postconditions: []
+    appliedRules: []
+    requiredPermissions:
+      - PERM-BOOKING-REPORT
+    syncTriggers: []
+    queryReportRef: REP-BOOKING-ROOM-SUMMARY
+
+  - id: Booking_ApproveDept
+    name: 部门主管审批预定
+    ownerEntity: AGG-BOOKING-001
+    behaviorType: COMMAND
+    triggerType: USER_ACTION
+    preconditions:
+      - "booking.status == '待部门主管审批'"
+    postconditions:
+      - field: booking.status
+        setValue: "待行政经理审批 / 已通过 / 已驳回"
+    appliedRules:
+      - RULE-BOOKING-NEEDS-ADMIN
+    requiredPermissions:
+      - PERM-BOOKING-APPROVE-DEPT
+    syncTriggers: []
+
+  - id: Booking_ApproveAdmin
+    name: 行政经理审批预定
+    ownerEntity: AGG-BOOKING-001
+    behaviorType: COMMAND
+    triggerType: USER_ACTION
+    preconditions:
+      - "booking.status == '待行政经理审批'"
+    postconditions:
+      - field: booking.status
+        setValue: "已通过 / 已驳回"
+    appliedRules: []
+    requiredPermissions:
+      - PERM-BOOKING-APPROVE-ADMIN
+    syncTriggers: []
+
+  - id: Room_QueryList
+    name: 查询会议室列表
+    ownerEntity: AGG-ROOM-001
+    behaviorType: QUERY
+    triggerType: USER_ACTION
+    preconditions: []
+    postconditions: []
+    appliedRules: []
+    requiredPermissions:
+      - PERM-ROOM-QUERY
+    syncTriggers: []
+
+  - id: Room_Create
+    name: 新增会议室
+    ownerEntity: AGG-ROOM-001
+    behaviorType: COMMAND
+    triggerType: USER_ACTION
+    preconditions:
+      - "room.capacity > 0"
+    postconditions:
+      - field: room.status
+        setValue: "在用"
+    appliedRules: []
+    requiredPermissions:
+      - PERM-ROOM-CREATE
+    syncTriggers: []

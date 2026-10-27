@@ -1,0 +1,70 @@
+# M6 流程模型 - 会议室预定管理域
+# 注意：nodeGraph 里 approval_task 的 role_ref 用的是系统角色 code
+# （DEPT_MANAGER / ADMIN_MANAGER，见 seed.py），不是 M5 的 roleId；
+# M6 顶层的 roleRefs 用 M5 roleId，两者的对应关系见下方注释。
+model_type: FLOW
+version: "1.0"
+domain: "会议室预定管理"
+
+flows:
+  - id: FLOW-BOOKING-APPROVAL
+    name: 预定审批
+    flowType: APPROVAL
+    description: 部门主管先审批；参会人数 >= 20 时再由行政经理复核，否则直接通过
+    businessObjectRefs:
+      - AGG-BOOKING-001
+    roleRefs:
+      - ROLE-DEPT-MANAGER
+      - ROLE-ADMIN-MANAGER
+    trigger:
+      triggerType: BEHAVIOR
+      behaviorRef: Booking_Submit
+    startActivity: start
+    endActivities: [end_ok, end_reject]
+    nodeGraph:
+      nodes:
+        - { id: start, type: start, name: 开始 }
+        - { id: n_dept, type: approval_task, name: 部门主管审批, role_ref: DEPT_MANAGER, outcomes: [APPROVE, REJECT] }
+        - id: g_admin
+          type: gateway
+          name: 大型会议判断
+          branches:
+            - { name: 参会人数达到 20 人及以上, rule_ref: RULE-BOOKING-NEEDS-ADMIN, target: n_admin }
+            - { name: 普通规模会议, target: end_ok, is_default: true }
+        - { id: n_admin, type: approval_task, name: 行政经理审批, role_ref: ADMIN_MANAGER, outcomes: [APPROVE, REJECT] }
+        - { id: end_ok, type: end, name: 审批通过结束, result: APPROVED }
+        - { id: end_reject, type: end, name: 驳回结束, result: REJECTED }
+      edges:
+        - { source: start, target: n_dept }
+        - { source: n_dept, target: g_admin, approval_outcome: APPROVE }
+        - { source: n_dept, target: end_reject, approval_outcome: REJECT }
+        - { source: g_admin, target: n_admin }
+        - { source: g_admin, target: end_ok }
+        - { source: n_admin, target: end_ok, approval_outcome: APPROVE }
+        - { source: n_admin, target: end_reject, approval_outcome: REJECT }
+
+  - id: FLOW-BOOKING-COLLABORATION
+    name: 预定全生命周期协同流
+    flowType: COLLABORATION
+    description: 预定创建、审批到通过的端到端协同流（参考流，由行为 + 审批子流驱动；流程引擎本期不执行 sub_flow_call 之外的编排，见上游引擎注释）
+    businessObjectRefs:
+      - AGG-BOOKING-001
+      - AGG-ROOM-001
+    roleRefs:
+      - ROLE-APPLICANT
+      - ROLE-DEPT-MANAGER
+      - ROLE-ADMIN-MANAGER
+    trigger:
+      triggerType: MANUAL
+    startActivity: c_start
+    endActivities: [c_end]
+    nodeGraph:
+      nodes:
+        - { id: c_start, type: start, name: 开始 }
+        - { id: c_create, type: user_task, name: 提交预定, role_ref: APPLICANT, behavior_ref: Booking_Submit }
+        - { id: c_approve, type: sub_flow_call, name: 预定审批, sub_flow_ref: FLOW-BOOKING-APPROVAL }
+        - { id: c_end, type: end, name: 结束, result: APPROVED }
+      edges:
+        - { source: c_start, target: c_create }
+        - { source: c_create, target: c_approve }
+        - { source: c_approve, target: c_end }
